@@ -1,33 +1,52 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+
 import './App.css'
 
+import { createWeb3Modal } from '@web3modal/wagmi/react'
+
+import { WagmiConfig,createConfig, configureChains } from 'wagmi'
+import { bsc, mainnet, bscTestnet } from 'viem/chains'
+import {walletConnectProvider, EIP6963Connector} from "@web3modal/wagmi"
+import {publicProvider} from "wagmi/providers/public"
+import {CoinbaseWalletConnector} from "wagmi/connectors/coinbaseWallet"
+import {InjectedConnector} from "wagmi/connectors/injected"
+import {WalletConnectConnector} from "wagmi/connectors/walletConnect"
+
+
+// 1. Get projectId
+const projectId = '45ff7348e614a721653a8d6d577b43da'
+
+// 2. Create wagmiConfig
+const metadata = {
+  name: 'web3-modal-setup',
+  description: 'Web3 Modal Example',
+}
+
+const usedChains = [mainnet, bsc, bscTestnet]
+
+const {chains, publicClient} = configureChains(usedChains, [walletConnectProvider({projectId}), publicProvider()])
+
+const wagmiConfig = createConfig({
+  autoConnect: true,
+  connectors: [
+      new WalletConnectConnector({chains, options: {projectId, showQrModal: true, metadata}}),
+      new EIP6963Connector({chains}),
+      new InjectedConnector({chains, options: {shimDisconnect: true}}),
+      new CoinbaseWalletConnector({chains, options: {appName: metadata.name}}),
+  ],
+  publicClient,
+})
+
+// 3. Create modal
+createWeb3Modal({ wagmiConfig, projectId, chains })
+
 function App() {
-  const [count, setCount] = useState(0)
 
   return (
     <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <WagmiConfig config={wagmiConfig}>
+        <w3m-button />
+      </WagmiConfig>
+      
     </>
   )
 }
